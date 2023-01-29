@@ -1,0 +1,68 @@
+if(1<2){
+  source("renv/activate.R")
+  library(survivalAnalysis)
+  library(survival)
+  library(magrittr)
+  library(dplyr)
+  library(survminer)
+  library(ggplot2)
+  library(ggpubr)
+  library(data.table)
+  library(R.utils)
+  library(tidyverse)
+  library(readxl)
+  library(dplyr)
+  library(tidyverse)
+  library(data.table)
+  library(survival)
+  library(survminer)
+  library(devtools)
+  library(GEOquery)
+  library(XML)
+  library(methods)
+}
+gset = getGEO(GEO='GSE29695', destdir=".",getGPL = F) 
+anno=fread("GPL8432-11703.txt",sep = "\t",header = T,data.table = F)
+# save(gset,file = "GSE29695.rdata")
+# load("GSE29695.rdata")
+# saveRDS(gset,file = "GSE29695.rds")
+# readRDS("GSE29695.rds")
+e1=gset[[1]]
+exp1=e1@assayData[["exprs"]]
+pdata1=pData(e1)
+write.csv(anno,file='anno.csv')
+write.csv(exp1,file='exp1.csv')
+time=pdata1$characteristics_ch1.9
+analysis=matrix(analysis)
+exp1=matrix(exp1)
+time=matrix(time)
+
+
+for(i in 1:nrow(time)){
+  time[i,] = substr(time[i,],13,20)
+}
+for(i in 1:nrow(time)){
+  time[i,] = as.numeric(time[i,])
+}
+
+for(i in 1:nrow(time)){
+  analysis[i,] = substr(analysis[i,],14,20)
+}
+matrixes=cbind(analysis,time,exp1)
+matrixes=as.data.frame(matrixes)
+matrixes=apply(matrixes,1:2,function(x) as.numeric(x))
+# datexpr2=as.data.frame(lapply(matrixes,as.numeric))
+res.cut <- surv_cutpoint(matrixes, time = "time", event = "status",
+                         variables = "expression")
+names(matrixes)[1:3]<-c("status","time",'expression')
+summary(res.cut)
+plot(res.cut,"expression", palette = "npg")
+res.cat <- surv_categorize(res.cut)
+head(res.cat)
+time=matrixes$time
+event=matrixes$status
+fit <- survfit(Surv(time,status) ~expression, data = res.cat)
+ggsurvplot(fit,
+           data = res.cat,
+           risk.table = TRUE,
+           pval = T)
